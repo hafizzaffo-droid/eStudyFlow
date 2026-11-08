@@ -1,0 +1,250 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function validProfile(data, userId) {
+      return data.keys().hasOnly([
+          'userId', 'username', 'displayName', 'email', 'photoURL',
+          'nationality', 'nationalityCode', 'flag', 'residenceCountry', 'city', 'postalCode',
+          'arrivalDate', 'visaType', 'residencePermitType', 'permitExpiryDate', 'school',
+          'studyLevel', 'studyField', 'formationType', 'studyYear', 'employmentGoals',
+          'housingStatus', 'healthInsuranceStatus', 'studentStatus', 'annualWorkHoursLimit',
+          'languagePreference', 'onboardingCompleted', 'notificationPreferences', 'updatedAt'
+        ])
+        && data.userId == userId
+        && (!data.keys().hasAny(['username']) || (data.username is string && data.username.size() <= 64))
+        && (!data.keys().hasAny(['displayName']) || (data.displayName is string && data.displayName.size() <= 120))
+        && (!data.keys().hasAny(['email']) || (data.email is string && data.email.size() <= 254))
+        && (!data.keys().hasAny(['languagePreference']) || data.languagePreference in ['fr', 'en'])
+        && (!data.keys().hasAny(['photoURL']) || (data.photoURL is string && data.photoURL.size() <= 350000))
+        && (!data.keys().hasAny(['nationality']) || (data.nationality is string && data.nationality.size() <= 100))
+        && (!data.keys().hasAny(['city']) || (data.city is string && data.city.size() <= 120))
+        && (!data.keys().hasAny(['school']) || (data.school is string && data.school.size() <= 200))
+        && (!data.keys().hasAny(['studyField']) || (data.studyField is string && data.studyField.size() <= 200))
+        && (!data.keys().hasAny(['annualWorkHoursLimit'])
+          || (data.annualWorkHoursLimit is number
+            && data.annualWorkHoursLimit >= 0
+            && data.annualWorkHoursLimit <= 2000))
+        && (!data.keys().hasAny(['employmentGoals'])
+          || (data.employmentGoals is list && data.employmentGoals.size() <= 20))
+        && (!data.keys().hasAny(['notificationPreferences'])
+          || (data.notificationPreferences is map
+            && data.notificationPreferences.keys().hasOnly(['demarches', 'titre', 'emploi', 'infos', 'calendrier'])));
+    }
+
+    function validTask(data, taskId, userId) {
+      return data.keys().hasOnly([
+          'id', 'userId', 'category', 'title', 'shortDescription', 'whyImportant', 'whenToDo',
+          'requiredDocuments', 'officialLink', 'officialSource', 'status', 'dueDate',
+          'isUrgent', 'isCustom', 'completedAt', 'completedSteps'
+        ])
+        && data.id == taskId
+        && data.userId == userId
+        && data.category in ['before_arrival', 'on_arrival', 'during_studies', 'end_of_studies']
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 200
+        && data.shortDescription is string
+        && data.shortDescription.size() <= 1000
+        && data.whyImportant is string
+        && data.whyImportant.size() <= 1000
+        && data.whenToDo is string
+        && data.whenToDo.size() <= 500
+        && data.requiredDocuments is list
+        && data.requiredDocuments.size() <= 30
+        && data.officialLink is string
+        && data.officialLink.size() <= 2048
+        && data.officialSource is string
+        && data.officialSource.size() <= 200
+        && data.status in ['todo', 'in_progress', 'completed']
+        && (!data.keys().hasAny(['dueDate']) || (data.dueDate is string && data.dueDate.size() <= 20))
+        && (!data.keys().hasAny(['isUrgent']) || data.isUrgent is bool)
+        && (!data.keys().hasAny(['isCustom']) || data.isCustom is bool)
+        && (!data.keys().hasAny(['completedAt']) || data.completedAt == null || data.completedAt is string)
+        && (!data.keys().hasAny(['completedSteps'])
+          || (data.completedSteps is list && data.completedSteps.size() <= 30));
+    }
+
+    function validWorkLog(data, workLogId, userId) {
+      return data.keys().hasOnly([
+          'id', 'userId', 'company', 'hours', 'month', 'date', 'contractType', 'notes', 'createdAt'
+        ])
+        && data.id == workLogId
+        && data.userId == userId
+        && data.company is string
+        && data.company.size() <= 120
+        && data.hours is number
+        && data.hours > 0
+        && data.hours <= 24
+        && data.month is string
+        && data.month.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')
+        && data.date is string
+        && data.date.matches('^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])$')
+        && data.contractType is string
+        && data.contractType.size() <= 80
+        && (!data.keys().hasAny(['notes']) || (data.notes is string && data.notes.size() <= 1000))
+        && (!data.keys().hasAny(['createdAt']) || (data.createdAt is string && data.createdAt.size() <= 40));
+    }
+
+    function validDocument(data, documentId, userId) {
+      return data.keys().hasOnly([
+          'id', 'userId', 'type', 'label', 'status', 'expiryDate', 'notes'
+        ])
+        && data.id == documentId
+        && data.userId == userId
+        && data.type is string
+        && data.type.size() <= 80
+        && data.label is string
+        && data.label.size() > 0
+        && data.label.size() <= 100
+        && data.status in ['ready', 'expiring_soon', 'missing']
+        && (!data.keys().hasAny(['expiryDate']) || (data.expiryDate is string && data.expiryDate.size() <= 20))
+        && (!data.keys().hasAny(['notes']) || (data.notes is string && data.notes.size() <= 1000));
+    }
+
+    // User accounts
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create, update: if (isOwner(userId) && isValidId(userId)) || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
+
+      // Student immigration & academic profile
+      match /profile/{profileId} {
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId) || isAdmin();
+        allow create, update: if (isOwner(userId)
+          && profileId == 'main'
+          && validProfile(request.resource.data, userId)) || isAdmin();
+        allow delete: if (isOwner(userId) && profileId == 'main') || isAdmin();
+      }
+
+      // Personalized administrative checklist tasks
+      match /tasks/{taskId} {
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId);
+        allow create, update: if (isOwner(userId)
+          && isValidId(taskId)
+          && validTask(request.resource.data, taskId, userId)) || isAdmin();
+        allow delete: if (isOwner(userId) && isValidId(taskId)) || isAdmin();
+      }
+
+      // Work hours logged for legal 964h tracker
+      match /workLogs/{workLogId} {
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId);
+        allow create, update: if (isOwner(userId)
+          && isValidId(workLogId)
+          && validWorkLog(request.resource.data, workLogId, userId)) || isAdmin();
+        allow delete: if (isOwner(userId) && isValidId(workLogId)) || isAdmin();
+      }
+
+      // Required documents readiness checklist
+      match /documents/{documentId} {
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId);
+        allow create, update: if (isOwner(userId)
+          && isValidId(documentId)
+          && validDocument(request.resource.data, documentId, userId)) || isAdmin();
+        allow delete: if (isOwner(userId) && isValidId(documentId)) || isAdmin();
+      }
+
+      // Personal notifications and deadline alerts
+      match /notifications/{notificationId} {
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId);
+        allow create, update, delete: if (isOwner(userId) && isValidId(notificationId)) || isAdmin();
+      }
+
+      // Job offers saved or applied to by the account owner
+      match /applications/{applicationId} {
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && isValidId(applicationId)
+          && request.resource.data.keys().hasOnly(['id', 'jobId', 'status', 'updatedAt'])
+          && request.resource.data.id == applicationId
+          && request.resource.data.jobId is string
+          && request.resource.data.jobId.size() <= 128
+          && request.resource.data.status in ['saved', 'applied', 'interview', 'rejected', 'offer']
+          && request.resource.data.updatedAt is string
+          && request.resource.data.updatedAt.size() <= 40;
+        allow delete: if isOwner(userId) && isValidId(applicationId);
+      }
+
+      match /feedback/{feedbackId} {
+        allow get, list, delete: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId)
+          && request.resource.data.uid == userId
+          && request.resource.data.message is string
+          && request.resource.data.message.size() > 0
+          && request.resource.data.message.size() <= 2000;
+      }
+
+      match /assistantMessages/{messageId} {
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && isValidId(messageId)
+          && request.resource.data.keys().hasOnly(['id', 'sender', 'text', 'sources', 'timestamp', 'createdAt'])
+          && request.resource.data.id == messageId
+          && request.resource.data.sender in ['user', 'assistant']
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 10000
+          && request.resource.data.timestamp is string
+          && request.resource.data.timestamp.size() <= 20
+          && request.resource.data.createdAt is number
+          && (!request.resource.data.keys().hasAny(['sources'])
+            || (request.resource.data.sources is list && request.resource.data.sources.size() <= 4));
+        allow delete: if isOwner(userId) && isValidId(messageId);
+      }
+    }
+
+    // Official administrative news & legal updates (readable by everyone/authenticated)
+    match /news/{newsId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() && isValidId(newsId);
+    }
+
+    // Curated job & internship offers
+    match /jobs/{jobId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() && isValidId(jobId);
+    }
+
+    // Administrative legal guidelines and nationality-specific rules
+    match /rules/{ruleId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() && isValidId(ruleId);
+    }
+
+    // Admin whitelist
+    match /admins/{adminId} {
+      allow get: if (isSignedIn() && request.auth.uid == adminId) || isAdmin();
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin() && isValidId(adminId);
+    }
+
+  }
+}
