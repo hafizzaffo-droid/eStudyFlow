@@ -1,0 +1,9 @@
+{
+  "apiKey": "demo-api-key-not-for-production",
+  "authDomain": "demo-estudyflow.firebaseapp.com",
+  "projectId": "demo-estudyflow",
+  "storageBucket": "demo-estudyflow.appspot.com",
+  "messagingSenderId": "000000000000",
+  "appId": "1:000000000000:web:0000000000000000",
+  "firestoreDatabaseId": "(default)"
+}
