@@ -5,7 +5,7 @@ Ce document t'est destiné. Je t'explique étape par étape comment passer l'app
 **Lis d'abord ceci :**
 
 - Tu n'as pas besoin de savoir coder. Quand une étape demande de modifier du code, je te donne **le texte exact à copier-coller à ton IA** (ChatGPT, Claude, etc.).
-- Si une étape bloque, **ne reste pas bloqué** : ton IA intégrée (Copilot dans VS Code, ou autre) est là pour ça. Elle doit lire le projet, comprendre l'erreur et la corriger elle-même. Je ne veux pas être sollicité pour les erreurs — c'est ton IA qui gère.
+- Si une étape bloque, **ne reste pas bloqué** : ton IA intégrée (Copilot dans VS Code, ou autre) est là pour ça. Elle doit lire le projet, comprendre l'erreur et la corriger elle-même.
 - Fais les étapes dans l'ordre et valide le « check » avant de passer à la suivante.
 - Ne partage jamais de clé ou de mot de passe en clair dans un message ou un commit.
 
@@ -181,11 +181,9 @@ npm start                   # servir la version buildée (comme en prod)
 firebase deploy --only firestore:rules   # déployer les règles
 ```
 
-## Si tu bloques — c'est ton IA qui corrige, pas moi
+## Si tu bloques — demande de l'aide à ton IA
 
-**Règle absolue : ne m'envoie jamais de message d'erreur.** Je ne sais pas ce que tu as modifié et je n'ai pas le temps de débloquer chaque étape. Ton IA intégrée (Copilot dans VS Code) a accès à tout ton projet : c'est elle qui doit diagnostiquer et corriger.
-
-Quand une commande échoue ou qu'une étape ne fonctionne pas :
+Quand une commande échoue ou qu'une étape ne fonctionne pas, ton IA intégrée (Copilot dans VS Code) a accès à tout ton projet : c'est elle qui doit diagnostiquer et corriger.
 
 1. **Copie le message d'erreur exact** (tout ce qui est rouge dans le terminal).
 2. **Colle-le à ton IA** avec ce message type :
