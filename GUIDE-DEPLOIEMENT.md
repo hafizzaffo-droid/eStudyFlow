@@ -5,7 +5,7 @@ Ce document t'est destiné. Je t'explique étape par étape comment passer l'app
 **Lis d'abord ceci :**
 
 - Tu n'as pas besoin de savoir coder. Quand une étape demande de modifier du code, je te donne **le texte exact à copier-coller à ton IA** (ChatGPT, Claude, etc.).
-- Si une étape bloque, **ne force pas** : envoie-moi le message d'erreur exact (copie-colle) et on regarde ensemble.
+- Si une étape bloque, **ne reste pas bloqué** : ton IA intégrée (Copilot dans VS Code, ou autre) est là pour ça. Elle doit lire le projet, comprendre l'erreur et la corriger elle-même. Je ne veux pas être sollicité pour les erreurs — c'est ton IA qui gère.
 - Fais les étapes dans l'ordre et valide le « check » avant de passer à la suivante.
 - Ne partage jamais de clé ou de mot de passe en clair dans un message ou un commit.
 
@@ -181,11 +181,28 @@ npm start                   # servir la version buildée (comme en prod)
 firebase deploy --only firestore:rules   # déployer les règles
 ```
 
-## Si tu bloques
+## Si tu bloques — c'est ton IA qui corrige, pas moi
 
-1. Copie le **message d'erreur exact** (tout ce qui est rouge dans le terminal).
-2. Envoie-le avec : la commande que tu as tapée + à quelle étape tu es.
-3. Pour un problème de code, demande à ton IA : *« Voici le message d'erreur [colle l'erreur] dans le projet eStudyFlow, étape [X] du guide. Comment le corriger ? »*
+**Règle absolue : ne m'envoie jamais de message d'erreur.** Je ne sais pas ce que tu as modifié et je n'ai pas le temps de débloquer chaque étape. Ton IA intégrée (Copilot dans VS Code) a accès à tout ton projet : c'est elle qui doit diagnostiquer et corriger.
+
+Quand une commande échoue ou qu'une étape ne fonctionne pas :
+
+1. **Copie le message d'erreur exact** (tout ce qui est rouge dans le terminal).
+2. **Colle-le à ton IA** avec ce message type :
+
+```
+Je suis en train de suivre le fichier GUIDE-DEPLOIEMENT.md du projet.
+J'en suis à l'étape [X]. La commande [commande] a produit cette erreur :
+
+[message d'erreur complet]
+
+Lis les fichiers concernés du projet, comprends pourquoi ça échoue et
+corrige le problème. Ne t'éloigne pas des instructions du guide.
+```
+
+3. **Laisse l'IA modifier le code**, puis relance la commande pour vérifier.
+4. Si l'IA propose un correctif, demande-lui aussi : *« Explique-moi en une phrase ce que tu as changé et pourquoi. »* Comme ça tu apprends au passage.
+5. Si après 2 ou 3 essais l'IA n'y arrive pas, note l'étape concernée et passe à la suivante — on verra plus tard. Ne reste pas coincé.
 
 ## Glossaire
 
